@@ -1,0 +1,94 @@
+server:
+  port: 8088
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: fire-recommendation
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/fire_recommendation?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 1234
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 123456
+      database: 0
+  mail:
+    host: smtp.example.com
+    port: 465
+    username: 1650102078@qq.com
+    password: 20031005jinwx
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+# 前端地址（分享链接等）
+app:
+  client-base-url: http://localhost:5173
+
+# MyBatis-Plus
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.fire.recommendation.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# JWT
+jwt:
+  secret: fire-recommendation-secret-key-at-least-256-bits-for-hs256
+  expiration-ms: 86400000
+  header: Authorization
+  prefix: Bearer
+
+# 接口文档：Knife4j 测试页 http://localhost:8088/api/doc.html
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# 推荐策略：是否启用基于物品的协同过滤（Item-CF）；false 时仅用“兴趣分类 Top1 + 热度”
+recommend:
+  use-item-cf: true
+  item-cf:
+    user-history-limit: 30   # 取用户最近行为过的内容数量
+    similar-per-item: 20     # 每个内容取多少相似内容参与聚合
+  # 启用 AI 时：先召回多少条候选供 AI 打分/重排，再分页（智能推荐核心 = 选品+排序）
+  ai:
+    recall-size: 50
+
+# 智能推荐 - AI 模型接入（可选，不配置或 enabled=false 时仅使用规则推荐）
+# 方式一：豆包/火山方舟等国内大模型（OpenAI 兼容 chat 接口）
+#    provider: doubao
+#    api-url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+#    api-key: 你的火山方舟 API Key（在火山引擎控制台-方舟-推理接入点创建后获取）
+#    model: ep-xxxxxxxx  # 推理接入点 ID，如 ep-20241101xxxx
+# 方式二：自建或第三方推荐增强服务（请求 { userId, candidates }，响应 { reasons } 或 { order }）
+#    api-url: http://localhost:5000/recommend/enrich
+#    api-key: ""
+ai:
+  recommend:
+    enabled: false
+    provider: ""      # 填 doubao 时使用豆包/火山方舟 chat 接口；不填则使用下方 api-url 的通用契约
+    api-url: ""
+    api-key: ""
+    model: ""          # 豆包模式下必填：火山方舟的推理接入点 ID
+    timeout-ms: 5000
