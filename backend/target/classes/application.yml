@@ -8,6 +8,9 @@ spring:
     name: fire-recommendation
   profiles:
     active: dev
+  mvc:
+    # 仅对 /static/** 使用默认静态资源，避免 /user/avatar/upload 等被当成静态路径
+    static-path-pattern: /static/**
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/fire_recommendation?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -31,9 +34,11 @@ spring:
           ssl:
             enable: true
 
-# 前端地址（分享链接等）
+# 用户端前端地址（密码重置链接、分享链接等；admin 管理端为 5173，用户端 client 为 5174）
+# 上传文件保存目录（头像等），相对路径为项目根目录下 uploads/
 app:
-  client-base-url: http://localhost:5173
+  client-base-url: http://localhost:5174
+  upload-dir: ./uploads
 
 # MyBatis-Plus
 mybatis-plus:
