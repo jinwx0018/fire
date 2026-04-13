@@ -1,4 +1,7 @@
-# 开发环境：可覆盖 application.yml 中的数据库、Redis 等
+# 开发环境：可覆盖 application.yml 中的数据库、Redis、邮件等
+# 论坛帖子点赞依赖 Redis（key：forum:post:like:{postId}）；请勿排除 RedisAutoConfiguration，否则点赞不会写入 Redis。
+# 若本机暂无 Redis，可临时用 Docker：docker run -d -p 6379:6379 redis:7-alpine
+# 并在下方 spring.data.redis 中配置与实例一致的 host/port/password（无密码则 password 留空或删除主配置里的 password）。
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/fire_recommendation?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -8,3 +11,49 @@ spring:
     redis:
       host: localhost
       port: 6379
+      # 覆盖主配置中的 password，避免本机无密码 Redis 报 ERR Client sent AUTH, but no password is set
+      password: ""
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 1650102078@qq.com   # 发件邮箱：需与 QQ 邮箱中开启 SMTP 的账号一致
+    password: nsalbpgtaupfehch    # QQ 邮箱生成的授权码（不是登录密码）
+    properties:
+      mail:
+        debug: true               # 开启 SMTP 调试日志，便于排查“发送失败”的具体原因
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+# 本地开发：关闭新闻列表/详情/RSS/评论发表 IP 与用户限流（默认配置见 application.yml）
+app:
+  rate-limit:
+    news-list-per-ip-per-minute: 0
+    news-detail-per-ip-per-minute: 0
+    news-rss-per-ip-per-minute: 0
+    news-comment-post-per-ip-per-minute: 0
+    news-comment-post-per-user-per-minute: 0
+    # 本地联调 AI 推荐时可关闭（生产见 application.yml）
+    recommend-list-ai-per-ip-per-minute: 0
+    recommend-list-ai-per-user-per-minute: 0
+
+# 开发环境：豆包（火山方舟 OpenAI 兼容 chat/completions）
+# 1）控制台创建「推理接入点」得到 model=ep-xxxx；复制「API Key」
+# 2）PowerShell 本进程设置（推荐，避免写入文件）：
+#    $env:AI_RECOMMEND_API_KEY="你的方舟API_Key"
+#    $env:AI_RECOMMEND_MODEL="ep-你的接入点ID"
+# 3）默认已填华北2 端点；其它地域可改 AI_RECOMMEND_API_URL
+# 未设置 KEY/MODEL 时 isAiLlmReady=false，推荐列表走规则/Item-CF，不请求豆包
+ai:
+  recommend:
+    enabled: true
+    provider: doubao
+    api-url: ${AI_RECOMMEND_API_URL:https://ark.cn-beijing.volces.com/api/v3/chat/completions}
+    api-key: ${AI_RECOMMEND_API_KEY:}
+    model: ${AI_RECOMMEND_MODEL:}
+    timeout-ms: 60000
+
+logging:
+  file:
+    name: ./logs/fire-recommendation-dev.log

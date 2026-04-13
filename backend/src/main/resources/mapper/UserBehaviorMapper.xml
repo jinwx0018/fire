@@ -2,9 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.fire.recommendation.mapper.UserBehaviorMapper">
 
-    <!-- 基于物品的协同过滤：与 contentId 被同一用户行为过的其他内容及共现次数 -->
+    <!-- Item-CF：共现强度 = Σ(行为类型权重×时间衰减)，与画像加权一致 -->
     <select id="findSimilarContentIds" resultType="map">
-        SELECT b2.target_id AS contentId, COUNT(DISTINCT b2.user_id) AS score
+        SELECT b2.target_id AS contentId,
+               SUM(
+                   (CASE UPPER(TRIM(b2.behavior_type))
+                       WHEN 'VIEW' THEN 1.0
+                       WHEN 'LIKE' THEN 3.0
+                       WHEN 'COLLECT' THEN 4.0
+                       WHEN 'COMMENT' THEN 2.5
+                       ELSE 1.0
+                   END) * EXP(-GREATEST(0, DATEDIFF(NOW(), b2.create_time)) / 30.0)
+               ) AS score
         FROM user_behavior b1
         INNER JOIN user_behavior b2 ON b1.user_id = b2.user_id
             AND b2.target_type = 'CONTENT'
@@ -12,6 +21,49 @@
         WHERE b1.target_type = 'CONTENT' AND b1.target_id = #{contentId}
         GROUP BY b2.target_id
         ORDER BY score DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 行为权重：VIEW=1 LIKE=3 COLLECT=4 COMMENT=2.5；时间衰减 exp(-days/λ)，λ=30 -->
+    <select id="selectWeightedTop3CategoryIds" resultType="long">
+        SELECT k.category_id
+        FROM user_behavior ub
+        INNER JOIN knowledge_content k ON ub.target_id = k.id AND ub.target_type = 'CONTENT'
+        WHERE ub.user_id = #{userId}
+          AND k.deleted = 0 AND k.status = 1 AND k.category_id IS NOT NULL
+        GROUP BY k.category_id
+        ORDER BY SUM(
+            (CASE UPPER(TRIM(ub.behavior_type))
+                WHEN 'VIEW' THEN 1.0
+                WHEN 'LIKE' THEN 3.0
+                WHEN 'COLLECT' THEN 4.0
+                WHEN 'COMMENT' THEN 2.5
+                ELSE 1.0
+            END) * EXP(-GREATEST(0, DATEDIFF(NOW(), ub.create_time)) / 30.0)
+        ) DESC
+        LIMIT 3
+    </select>
+
+    <select id="selectRecentViewedContentTexts" resultType="map">
+        SELECT k.title AS contentTitle, k.summary AS contentSummary
+        FROM user_behavior ub
+        INNER JOIN knowledge_content k ON ub.target_id = k.id AND ub.target_type = 'CONTENT'
+        WHERE ub.user_id = #{userId}
+          AND UPPER(TRIM(ub.behavior_type)) = 'VIEW'
+          AND k.deleted = 0 AND k.status = 1
+        ORDER BY ub.create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectForumCrossDomainTitles" resultType="string">
+        SELECT fp.title
+        FROM user_behavior ub
+        INNER JOIN forum_post fp ON fp.id = ub.target_id
+        WHERE ub.user_id = #{userId}
+          AND (ub.target_type = 'FORUM_POST' OR ub.target_type = 'POST')
+          AND UPPER(TRIM(ub.behavior_type)) IN ('VIEW', 'LIKE', 'COMMENT')
+          AND fp.deleted = 0 AND fp.status = 1
+        ORDER BY ub.create_time DESC
         LIMIT #{limit}
     </select>
 </mapper>

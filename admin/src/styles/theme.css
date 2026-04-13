@@ -1,0 +1,226 @@
+/* 管理端：与用户端 client/src/styles/theme.css 同一套品牌色 */
+:root {
+  --client-primary: #3b82f6;
+  --client-primary-hover: #2563eb;
+  --client-accent: #0ea5e9;
+  --client-accent-soft: #e0f2fe;
+  --client-bg: #f0f7fc;
+  --client-surface: #ffffff;
+  --client-text: #1e3a5f;
+  --client-muted: #64748b;
+  --client-radius: 12px;
+  --client-shadow: 0 4px 24px rgba(59, 130, 246, 0.1);
+  --client-font: 'Noto Sans SC', 'DM Sans', system-ui, -apple-system, sans-serif;
+  --client-content-max: 1680px;
+
+  /* 管理端壳层 */
+  --admin-sidebar-bg: linear-gradient(180deg, #0f172a 0%, #0c1829 100%);
+  --admin-sidebar-border: rgba(255, 255, 255, 0.06);
+  --admin-sidebar-text: rgba(255, 255, 255, 0.78);
+  --admin-sidebar-active: #ffffff;
+  --admin-accent: var(--client-accent);
+  --admin-main-bg: var(--client-bg);
+
+  --el-color-primary: var(--client-primary);
+  --el-color-primary-light-3: #60a5fa;
+  --el-color-primary-light-5: #93c5fd;
+  --el-color-primary-light-7: #bfdbfe;
+  --el-color-primary-light-9: #dbeafe;
+  --el-color-primary-dark-2: #2563eb;
+  --el-border-radius-base: 10px;
+  --el-font-family: var(--client-font);
+}
+
+html,
+body,
+#app {
+  font-family: var(--el-font-family);
+}
+
+body {
+  background: var(--admin-main-bg);
+  color: var(--client-text);
+}
+
+/* 侧栏菜单与 Element 菜单深色统一 */
+.admin-sidebar-menu.el-menu {
+  --el-menu-bg-color: transparent !important;
+  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.06) !important;
+  --el-menu-text-color: var(--admin-sidebar-text) !important;
+  --el-menu-active-color: var(--admin-sidebar-active) !important;
+}
+
+.admin-sidebar-menu .el-menu-item.is-active {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.32), transparent) !important;
+  border-left: 3px solid var(--admin-accent);
+}
+
+/* 统一管理端页面容器风格（覆盖旧页面） */
+.main > * {
+  max-width: var(--client-content-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.main .page,
+.main .system-config {
+  border-radius: var(--client-radius) !important;
+}
+
+.main .page {
+  background: var(--client-surface) !important;
+  border: 1px solid rgba(59, 130, 246, 0.12) !important;
+  box-shadow: 0 2px 20px rgba(59, 130, 246, 0.06) !important;
+  padding: 18px !important;
+}
+
+.main .toolbar,
+.main .toolbar-head,
+.main .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px !important;
+}
+
+.main .toolbar {
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1) !important;
+}
+
+.main .toolbar h2,
+.main .toolbar-head h2 {
+  margin: 0;
+  font-size: 1.125rem !important;
+  color: var(--client-text) !important;
+}
+
+.main .filters,
+.main .toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+}
+
+.main .filters input,
+.main .filters select,
+.main .toolbar-filters input,
+.main .toolbar-filters select,
+.main .keyword,
+.main .cell-input {
+  border-radius: 10px !important;
+  border: 1px solid rgba(148, 163, 184, 0.45) !important;
+  color: var(--client-text) !important;
+}
+
+.main .table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.main .table th,
+.main .table td {
+  border: 1px solid rgba(59, 130, 246, 0.12) !important;
+  padding: 10px 8px;
+}
+
+.main .table th {
+  background: rgba(224, 242, 254, 0.42) !important;
+  color: var(--client-text) !important;
+  font-weight: 600;
+}
+
+.main .table tbody tr:hover {
+  background: rgba(240, 247, 252, 0.45);
+}
+
+.main .btn,
+.main .btn-primary,
+.main .btn-query,
+.main .tabs button {
+  border-radius: 10px !important;
+}
+
+.main .btn-primary,
+.main .tabs button.active {
+  background: var(--client-primary) !important;
+  border-color: var(--client-primary) !important;
+  color: #fff !important;
+}
+
+.main .btn-query,
+.main .btn.secondary,
+.main .tabs button {
+  background: var(--client-surface) !important;
+  border: 1px solid rgba(59, 130, 246, 0.22) !important;
+  color: var(--client-text) !important;
+}
+
+.main .btn-danger,
+.main .btn-delete {
+  background: #ef4444 !important;
+  color: #fff !important;
+  border-color: #ef4444 !important;
+}
+
+.main .btn-ok,
+.main .btn-restore {
+  background: #22c55e !important;
+  color: #fff !important;
+  border-color: #22c55e !important;
+}
+
+.main .link,
+.main .action-link,
+.main .name-link,
+.main a {
+  color: var(--client-primary);
+}
+
+.main .link.danger,
+.main .action-link.danger {
+  color: #dc2626 !important;
+}
+
+.main .tips,
+.main .tip,
+.main .hint,
+.main .filter-hint,
+.main .muted {
+  color: var(--client-muted) !important;
+}
+
+.main .empty {
+  color: var(--client-muted) !important;
+}
+
+.main .module-tag.mod-knowledge {
+  background: var(--client-accent-soft) !important;
+  color: var(--client-primary) !important;
+}
+
+.main .module-tag.mod-news {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #059669 !important;
+}
+
+.main .module-tag.mod-forum {
+  background: rgba(14, 165, 233, 0.14) !important;
+  color: #0284c7 !important;
+}
+
+.main .dialog {
+  border-radius: var(--client-radius) !important;
+  border: 1px solid rgba(59, 130, 246, 0.14) !important;
+}
+
+.main .pagination-wrap,
+.main .pager,
+.main .pager-bar {
+  margin-top: 16px !important;
+}

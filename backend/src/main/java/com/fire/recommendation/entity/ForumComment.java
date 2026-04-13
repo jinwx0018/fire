@@ -17,6 +17,10 @@ public class ForumComment {
     private Long userId;
     private Long parentId;
     private String content;
+    /** 点赞数（与 Redis Set 或 user_comment_like 同步） */
+    private Integer likeCount;
+    /** 1 显示 0 隐藏（管理端审核） */
+    private Integer status;
     @TableLogic
     private Integer deleted;
     private LocalDateTime createTime;

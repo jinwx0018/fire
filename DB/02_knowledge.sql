@@ -1,5 +1,6 @@
 -- ============================================================
--- 模块二：消防知识内容管理 - 分类、内容、标签、用户收藏（兼容 MySQL 5.6）
+-- 模块二：消防知识内容管理 - 分类、内容、用户收藏（兼容 MySQL 5.6）
+-- 下方 knowledge_tag / knowledge_content_tag 仅保留表结构以兼容已有库；当前应用仅按分类组织知识，不再读写标签。
 -- 依赖：01_sys_user.sql
 -- ============================================================
 
@@ -60,13 +61,14 @@ CREATE TABLE IF NOT EXISTS knowledge_content_tag (
   KEY idx_tag_id (tag_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='内容-标签关联表';
 
--- 用户收藏表
+-- 用户收藏表（content_id：知识/帖子/新闻 ID，由 target_type 区分）
 CREATE TABLE IF NOT EXISTS user_collection (
-  id          BIGINT   PRIMARY KEY AUTO_INCREMENT,
-  user_id     BIGINT   NOT NULL COMMENT '用户ID',
-  content_id  BIGINT   NOT NULL COMMENT '知识内容ID',
-  create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uk_user_content (user_id, content_id),
+  id           BIGINT   PRIMARY KEY AUTO_INCREMENT,
+  user_id      BIGINT   NOT NULL COMMENT '用户ID',
+  target_type  TINYINT  NOT NULL DEFAULT 1 COMMENT '1知识 2论坛帖 3新闻',
+  content_id   BIGINT   NOT NULL COMMENT '目标实体ID',
+  create_time  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_user_type_content (user_id, target_type, content_id),
   KEY idx_user_id (user_id),
   KEY idx_content_id (content_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收藏表';

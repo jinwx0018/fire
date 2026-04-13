@@ -1,3 +1,23 @@
+########################################
+# Git 忽略配置（只在你初始化 git 时生效）
+########################################
+
+# 1) 开发环境私有配置（含邮箱授权码等，避免提交到远端）
+backend/src/main/resources/application-dev.yml
+
+# 2) 常见构建产物 / 依赖目录（可按需增减）
+backend/target/
+client/node_modules/
+admin/node_modules/
+
+# 3) IDE / 临时文件
+.idea/
+.vscode/
+*.iml
+*.log
+dist/
+out/
+
 # IDE 与编辑器
 .idea/
 .vscode/
@@ -20,6 +40,7 @@ backend/target/
 .env.local
 .env.*.local
 *.log
+logs/
 
 # 系统与临时文件
 .DS_Store

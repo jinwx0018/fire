@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS sys_user (
   avatar      VARCHAR(512)          DEFAULT NULL COMMENT '头像URL',
   role_id     BIGINT       NOT NULL DEFAULT 1 COMMENT '角色ID，关联 sys_role.id',
   status      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态：0 禁用 1 正常',
+  token_version INT        NOT NULL DEFAULT 0 COMMENT 'JWT版本号，改密/强制下线后+1',
+  deleted     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+  deleted_time DATETIME             DEFAULT NULL COMMENT '注销时间',
   create_time TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   update_time TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_username (username),
@@ -46,7 +49,7 @@ CREATE TABLE IF NOT EXISTS sys_password_reset_token (
   KEY idx_expire (expire_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='密码重置Token表';
 
--- 初始化角色数据
+-- 初始化角色数据（固定 id：1=普通用户 2=作者 3=管理员；作者申请通过后 role_id 置为 2，管理员账号应为 3）
 INSERT INTO sys_role (id, role_code, role_name) VALUES
 (1, 'USER', '普通用户'),
 (2, 'AUTHOR', '作者'),

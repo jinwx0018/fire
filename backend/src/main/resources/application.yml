@@ -3,6 +3,15 @@ server:
   servlet:
     context-path: /api
 
+# 文件日志（管理端「系统监控」可查看尾部）；未配置时仅控制台输出
+logging:
+  file:
+    name: ${LOG_FILE_PATH:./logs/fire-recommendation.log}
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 14
+
 spring:
   application:
     name: fire-recommendation
@@ -22,6 +31,11 @@ spring:
       port: 6379
       password: 123456
       database: 0
+  servlet:
+    multipart:
+      # 头像等小文件 + 器材 Excel 批量导入（略放宽）；超限返回业务提示见 GlobalExceptionHandler
+      max-file-size: 10MB
+      max-request-size: 12MB
   # QQ 邮箱需使用授权码（设置 → 账户 → POP3/IMAP 服务 → 生成授权码），勿填登录密码
   # 授权码通过环境变量 MAIL_AUTH_CODE 传入，或在此处填写（勿提交到 Git）
   mail:
@@ -36,11 +50,42 @@ spring:
           ssl:
             enable: true
 
-# 用户端前端地址（密码重置链接、分享链接等；admin 管理端为 5173，用户端 client 为 5174）
+# 用户端前端地址（密码重置链接、分享链接等；admin 管理端为 5173，用户端 client 为 5177）
 # 上传文件保存目录（头像等），相对路径为项目根目录下 uploads/
 app:
-  client-base-url: http://localhost:5174
+  client-base-url: http://localhost:5177
   upload-dir: ./uploads
+  # WebSocket 站内通知：逗号分隔 Origin 模式，* 表示开发放行全部；生产建议改为 https://你的域名
+  websocket:
+    allowed-origin-patterns: "*"
+  # CORS：生产请使用 spring.profiles.active=prod 或显式将 allow-all 设为 false 并配置域名
+  cors:
+    allow-all: true
+    allowed-origin-patterns: http://localhost:5173,http://localhost:5177
+  # 新闻正文 img/a 外链主机白名单（逗号分隔，小写域名）；为空则仅 OWASP 消毒，不做主机过滤
+  news:
+    allowed-resource-hosts: ""
+  rate-limit:
+    behavior-per-minute: 120
+    login-per-ip-per-minute: 30
+    login-per-username-per-minute: 20
+    admin-login-per-ip-per-minute: 30
+    register-per-ip-per-hour: 30
+    reset-email-per-ip-per-hour: 20
+    # 用户端新闻：0 表示关闭；开发环境可在 application-dev.yml 覆盖为 0
+    news-list-per-ip-per-minute: 120
+    news-detail-per-ip-per-minute: 90
+    news-rss-per-ip-per-minute: 120
+    news-comment-post-per-ip-per-minute: 30
+    news-comment-post-per-user-per-minute: 20
+    # 启用 AI 推荐时 GET /recommend/list 限流（0 关闭对应维度）
+    recommend-list-ai-per-ip-per-minute: 30
+    recommend-list-ai-per-user-per-minute: 60
+  api-docs:
+    # false 时拦截器对 /doc.html、/v3/api-docs 等返回 404（生产建议 false，并配合 springdoc/knife4j 关闭）
+    enabled: true
+    # true 时仅本机/私网可访问文档；公网部署且需文档时请 false 并务必鉴权或 VPN
+    restrict-to-internal-network: false
 
 # MyBatis-Plus
 mybatis-plus:
@@ -60,8 +105,11 @@ mybatis-plus:
 jwt:
   secret: fire-recommendation-secret-key-at-least-256-bits-for-hs256
   expiration-ms: 86400000
+  refresh-expiration-ms: 2592000000
   header: Authorization
   prefix: Bearer
+  # 逗号分隔，追加无需 Token 的路径（context-path 之后的路径，不含 /api 前缀）
+  extra-exclude-paths: ""
 
 # 接口文档：Knife4j 测试页 http://localhost:8088/api/doc.html
 springdoc:
@@ -72,17 +120,57 @@ knife4j:
   setting:
     language: zh_cn
 
-# 推荐策略：是否启用基于物品的协同过滤（Item-CF）；false 时仅用“兴趣分类 Top1 + 热度”
+# 智能推荐：召回（可选多路合并）→ 精排（多因子）→ 分页；可选 AI 仅精排头部（见 RecommendServiceImpl）
 recommend:
   use-item-cf: true
   item-cf:
-    user-history-limit: 30   # 取用户最近行为过的内容数量
-    similar-per-item: 20     # 每个内容取多少相似内容参与聚合
-  # 启用 AI 时：先召回多少条候选供 AI 打分/重排，再分页（智能推荐核心 = 选品+排序）
+    user-history-limit: 30
+    similar-per-item: 20
+  # 两阶段-召回：合并「偏好 Top3 类目较新 + Item-CF 高分 id + 全站热度暖池」，控制参与精排规模（毕设/生产均宜开启）
+  recall:
+    enabled: true
+    max-candidates: 400
+    per-category-limit: 90
+    cf-id-limit: 150
+    hot-batch-limit: 120
+  # 精排分项权重（与论文 Score≈类目匹配+热度log+时间衰减 对齐，可按离线评测微调）
+  ranking:
+    log-view-weight: 12.0
+    log-like-weight: 18.0
+    decay-bonus-max: 80.0
+    decay-half-life-days: 120.0
+    category-bonus-1: 1200
+    category-bonus-2: 700
+    category-bonus-3: 400
+    cf-score-cap: 800
+    cf-score-multiplier: 6.0
+  # 启用 AI 时：仅对「规则排序后」的前 N 条调用大模型微调顺序，其后条目仍为规则序（避免超长 prompt）
   ai:
-    recall-size: 50
+    rerank-pool-size: 40
+  # 在召回池之后再截断：0=不限制；若召回后仍过大可设 500～3000
+  smart-max-pool: 0
+  # 逗号分隔 categoryId，运营侧从智能推荐候选中排除（与用户个人中心「不感兴趣分类」合并生效）
+  exclude-category-ids: ""
+  keyword-max-length: 64
+  # 冷启动：无行为画像时使用的默认兴趣（逗号分隔；与「不感兴趣分类」仍会合并排除）
+  cold-start:
+    default-category-ids: ""
+  # 轻量语义：与近期浏览标题/摘要的字二元组相似度加分（无向量服务）
+  semantic-similarity:
+    enabled: true
+    recent-view-limit: 8
+    max-boost: 420
+  # 论坛互动标题与候选知识的文本相似加分（跨域）
+  forum-cross-domain:
+    enabled: true
+    title-limit: 12
+    max-boost: 200
+  # 推荐列表点击/曝光写入 recommend_feedback（需建表）
+  feedback:
+    enabled: true
 
-# 智能推荐 - AI 模型接入（可选，不配置或 enabled=false 时仅使用规则推荐）
+# 智能推荐 - AI 模型接入（可选，不配置或 enabled=false 时服务端不调用大模型）
+# 说明：用户端「消防知识 → 智能推荐」仅在用户手动勾选「AI 增强」时才会传 useAi=true；未传或 false 时永远走规则排序，与下方 enabled 是否打开无关（enabled 只表示服务端是否允许在收到 useAi=true 时调用豆包）。
 # 方式一：豆包/火山方舟等国内大模型（OpenAI 兼容 chat 接口）
 #    provider: doubao
 #    api-url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
@@ -93,9 +181,14 @@ recommend:
 #    api-key: ""
 ai:
   recommend:
-    enabled: false
-    provider: ""      # 填 doubao 时使用豆包/火山方舟 chat 接口；不填则使用下方 api-url 的通用契约
-    api-url: ""
-    api-key: ""
-    model: ""          # 豆包模式下必填：火山方舟的推理接入点 ID
+    enabled: true
+    provider: "doubao"      # doubao：火山方舟 OpenAI 兼容接口（见下方默认 URL）
+    # 华北2 豆包 chat/completions；也可用环境变量 AI_RECOMMEND_API_URL 覆盖
+    api-url: ${AI_RECOMMEND_API_URL:https://ark.cn-beijing.volces.com/api/v3/chat/completions}
+    api-key: ${AI_RECOMMEND_API_KEY:5457679f-4da4-408e-9906-d5b5970f477a}
+    model: ${AI_RECOMMEND_MODEL:ep001}   # 方舟「推理接入点」ID，如 ep-xxxx
+    # 读超时：超则降级为规则序/无理由，建议 8～20s；过长易占用 Tomcat 线程
     timeout-ms: 5000
+    # 开发环境启用示例见 application-dev.yml；生产请用环境变量注入密钥，勿提交明文
+    # 逗号分隔，写入 AI Prompt / 通用 API context.hotTopics，作平台热点消防主题参考（可选）
+    hot-topics: ""

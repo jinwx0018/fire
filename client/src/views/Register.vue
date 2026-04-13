@@ -1,26 +1,27 @@
 <template>
   <div class="auth-page">
-    <div class="card">
+    <div class="auth-card">
       <h1>用户注册</h1>
+      <p class="auth-sub">创建账号，开始学习消防知识</p>
       <form @submit.prevent="onSubmit">
         <div class="field">
           <label>用户名 *</label>
-          <input v-model="form.username" type="text" required />
+          <input v-model="form.username" type="text" required autocomplete="username" />
         </div>
         <div class="field">
           <label>密码 *</label>
-          <input v-model="form.password" type="password" required />
+          <input v-model="form.password" type="password" required autocomplete="new-password" />
         </div>
         <div class="field">
           <label>手机号 *</label>
-          <input v-model="form.phone" type="text" required />
+          <input v-model="form.phone" type="tel" required autocomplete="tel" />
         </div>
         <div class="field">
           <label>邮箱</label>
-          <input v-model="form.email" type="email" />
+          <input v-model="form.email" type="email" autocomplete="email" />
         </div>
         <p v-if="err" class="err">{{ err }}</p>
-        <button type="submit" :disabled="loading">注册</button>
+        <button type="submit" :disabled="loading">{{ loading ? '提交中…' : '注册' }}</button>
       </form>
       <p class="tip">已有账号？<router-link to="/login">登录</router-link></p>
     </div>
@@ -51,16 +52,3 @@ async function onSubmit() {
   }
 }
 </script>
-
-<style scoped>
-.auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; }
-.card { width: 360px; padding: 32px; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-.card h1 { font-size: 18px; margin-bottom: 24px; text-align: center; }
-.field { margin-bottom: 16px; }
-.field label { display: block; margin-bottom: 6px; font-size: 14px; }
-.field input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-.err { color: #c00; font-size: 13px; margin-bottom: 12px; }
-button { width: 100%; padding: 10px; background: #1890ff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-.tip { margin-top: 16px; font-size: 13px; text-align: center; }
-.tip a { color: #1890ff; }
-</style>

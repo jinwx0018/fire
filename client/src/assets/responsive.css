@@ -1,0 +1,8 @@
+/* 移动端通用：避免表格/宽内容撑破视口 */
+@media (max-width: 768px) {
+  .el-table,
+  .el-pagination,
+  img {
+    max-width: 100%;
+  }
+}

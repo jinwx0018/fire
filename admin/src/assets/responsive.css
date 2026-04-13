@@ -1,0 +1,9 @@
+@media (max-width: 768px) {
+  .el-table {
+    font-size: 12px;
+  }
+  .el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

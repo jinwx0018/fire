@@ -1,8 +1,8 @@
 <template>
-  <div class="page">
-    <el-card>
+  <div class="page user-form-page">
+    <el-card class="user-form-card" shadow="never">
       <template #header>
-        <span>{{ isEdit ? '编辑用户' : '新增用户' }}</span>
+        <span class="card-title">{{ isEdit ? '编辑用户' : '新增用户' }}</span>
       </template>
       <el-form :model="form" label-width="80px" style="max-width: 480px">
         <el-form-item label="用户名" required>
@@ -33,7 +33,7 @@
         <el-alert v-if="err" type="error" :title="err" show-icon :closable="false" class="err-alert" />
         <el-form-item>
           <el-button type="primary" :loading="loading" @click="submit">保存</el-button>
-          <el-button @click="$router.push('/user')">返回列表</el-button>
+          <el-button @click="$router.push('/user/list')">返回列表</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -99,7 +99,7 @@ async function submit() {
         status: 1,
       })
     }
-    router.push('/user')
+    router.push('/user/list')
   } catch (e) {
     err.value = e.message || '保存失败'
   } finally {
@@ -114,7 +114,38 @@ watch(() => route.params.id, (newId) => {
 </script>
 
 <style scoped>
+.user-form-page {
+  max-width: 520px;
+}
+.user-form-card {
+  border-radius: var(--client-radius);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+  box-shadow: 0 2px 20px rgba(59, 130, 246, 0.06);
+}
+.user-form-card :deep(.el-card__header) {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+.card-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--client-text);
+  letter-spacing: -0.02em;
+}
+.user-form-card :deep(.el-card__body) {
+  padding: 20px 20px 24px;
+}
+.user-form-card :deep(.el-form-item__label) {
+  color: var(--client-text);
+}
 .err-alert {
   margin-bottom: 12px;
+}
+.user-form-card :deep(.el-button--primary) {
+  border-radius: 10px;
+}
+.user-form-card :deep(.el-button:not(.el-button--primary)) {
+  border-radius: 10px;
+  border-color: rgba(59, 130, 246, 0.22);
 }
 </style>

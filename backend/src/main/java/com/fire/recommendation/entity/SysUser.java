@@ -19,6 +19,11 @@ public class SysUser {
     private String avatar;
     private Long roleId;
     private Integer status;
+    /** JWT 版本号，用于强制下线/改密后令旧 token 失效 */
+    private Integer tokenVersion;
+    /** 逻辑删除：0 未删除 1 已删除 */
+    private Integer deleted;
+    private LocalDateTime deletedTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

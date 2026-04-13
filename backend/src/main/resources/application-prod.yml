@@ -1,0 +1,17 @@
+# 生产环境示例：启动时加 --spring.profiles.active=prod
+# 请按实际域名修改 allowed-origin-patterns，并务必修改 jwt.secret、数据库与 Redis 密码
+
+springdoc:
+  api-docs:
+    enabled: false
+knife4j:
+  enable: false
+
+app:
+  cors:
+    allow-all: false
+    allowed-origin-patterns: https://example.com,https://admin.example.com
+  api-docs:
+    enabled: false
+    # 若临时开启文档且仅内网运维访问，可设 true 并启用 springdoc；公网切勿开启
+    restrict-to-internal-network: false

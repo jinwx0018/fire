@@ -33,11 +33,14 @@ CREATE TABLE IF NOT EXISTS forum_comment (
   user_id     BIGINT   NOT NULL COMMENT '评论者ID',
   parent_id   BIGINT   DEFAULT NULL COMMENT '父评论ID，为空则为一级评论',
   content     TEXT     NOT NULL COMMENT '评论内容',
+  like_count  INT      NOT NULL DEFAULT 0 COMMENT '点赞数（可与 Redis / user_comment_like 同步）',
+  status      TINYINT  NOT NULL DEFAULT 1 COMMENT '1 显示 0 隐藏（管理端审核）',
   deleted     TINYINT  NOT NULL DEFAULT 0 COMMENT '逻辑删除',
   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_post_id (post_id),
   KEY idx_user_id (user_id),
   KEY idx_parent_id (parent_id),
+  KEY idx_fc_status (status),
   KEY idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='帖子评论表';

@@ -1,5 +1,7 @@
 package com.fire.recommendation.service;
 
+import com.fire.recommendation.dto.AiRecommendContext;
+
 import java.util.List;
 import java.util.Map;
 
@@ -18,17 +20,31 @@ public interface AiRecommendService {
      * @param candidates 候选列表，每项至少含 id、title、summary、categoryName
      * @return 重排后的列表（顺序可能改变），若未启用或失败则返回原 candidates
      */
-    List<Map<String, Object>> reorderByAi(Long userId, List<Map<String, Object>> candidates);
+    default List<Map<String, Object>> reorderByAi(Long userId, List<Map<String, Object>> candidates) {
+        return reorderByAi(userId, candidates, AiRecommendContext.empty());
+    }
+
+    /**
+     * 同 {@link #reorderByAi(Long, List)}，并传入检索词/偏好分类/热点词等供 Prompt 或通用 API 使用。
+     */
+    List<Map<String, Object>> reorderByAi(Long userId, List<Map<String, Object>> candidates, AiRecommendContext ctx);
 
     /**
      * 对推荐列表进行 AI 增强：为每条结果补充推荐理由（recommendReason）。
      * 若未启用 AI 或调用异常，不修改 items。
-     *
-     * @param userId 当前用户 ID，可为 null
-     * @param items  推荐列表，每项至少含 id、title、summary 等，方法可能注入 recommendReason
      */
-    void enrichRecommendReasons(Long userId, List<Map<String, Object>> items);
+    default void enrichRecommendReasons(Long userId, List<Map<String, Object>> items) {
+        enrichRecommendReasons(userId, items, AiRecommendContext.empty());
+    }
 
-    /** 是否启用 AI 推荐（用于召回层是否多取候选并调用重排） */
+    void enrichRecommendReasons(Long userId, List<Map<String, Object>> items, AiRecommendContext ctx);
+
+    /** 是否启用 AI 推荐（配置开关） */
     boolean isAiRecommendEnabled();
+
+    /**
+     * 是否已具备调用大模型/外部网关的条件（开关开启且 URL、密钥、模型等已配齐）。
+     * 豆包模式需同时配置 api-url、api-key、model（推理接入点 ID）。
+     */
+    boolean isAiLlmReady();
 }

@@ -13,6 +13,8 @@ public class UserCollection {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long userId;
+    /** {@link com.fire.recommendation.constant.CollectionTargetType} */
+    private Integer targetType;
     private Long contentId;
     private LocalDateTime createTime;
 }

@@ -70,35 +70,82 @@ async function submit() {
 </script>
 
 <style scoped>
-.page { max-width: 400px; }
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+.page {
+  max-width: 440px;
 }
-.field { margin-bottom: 14px; }
-.field label { display: block; margin-bottom: 4px; font-size: 14px; color: #555; }
+.page h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--client-text);
+}
+.card {
+  background: var(--client-surface);
+  padding: 28px;
+  border-radius: var(--client-radius);
+  box-shadow: var(--client-shadow);
+  border: 1px solid #f1f5f9;
+}
+.field {
+  margin-bottom: 16px;
+}
+.field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #334155;
+}
 .field input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9375rem;
 }
-.err { color: #c00; font-size: 13px; margin-bottom: 10px; }
-.ok { color: #52c41a; font-size: 13px; margin-bottom: 10px; }
-.actions { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+.field input:focus {
+  outline: none;
+  border-color: var(--client-primary);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+}
+.err {
+  color: #dc2626;
+  font-size: 0.8125rem;
+  margin-bottom: 10px;
+}
+.ok {
+  color: #16a34a;
+  font-size: 0.8125rem;
+  margin-bottom: 10px;
+}
+.actions {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
 .actions button {
-  padding: 10px 20px;
-  background: #1890ff;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, var(--client-primary), #2563eb);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
-.actions button:disabled { opacity: 0.7; cursor: not-allowed; }
-.actions .link { color: #1890ff; text-decoration: none; font-size: 14px; }
-.actions .link:hover { text-decoration: underline; }
+.actions button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.actions .link {
+  color: var(--client-primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.actions .link:hover {
+  text-decoration: underline;
+}
 </style>

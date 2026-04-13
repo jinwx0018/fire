@@ -1,0 +1,161 @@
+/* 用户端：清新淡雅淡蓝 */
+:root {
+  --client-primary: #3b82f6;
+  --client-primary-hover: #2563eb;
+  --client-accent: #0ea5e9;
+  --client-accent-soft: #e0f2fe;
+  --client-bg: #f0f7fc;
+  --client-surface: #ffffff;
+  --client-text: #1e3a5f;
+  --client-muted: #64748b;
+  --client-header-bg: linear-gradient(180deg, #e8f4fc 0%, #dbeefc 100%);
+  --client-radius: 12px;
+  --client-shadow: 0 4px 24px rgba(59, 130, 246, 0.1);
+  --client-font: 'Noto Sans SC', 'DM Sans', system-ui, -apple-system, sans-serif;
+  /* 桌面端内容区最大宽度：避免大屏两侧留白过多（知识/收藏等列表页共用） */
+  --client-content-max: 1680px;
+}
+
+html,
+body,
+#app {
+  font-family: var(--client-font);
+  color: var(--client-text);
+  background: var(--client-bg);
+}
+
+/* 认证页通用 */
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: linear-gradient(145deg, #e0f2fe 0%, #f0f9ff 45%, #dbeafe 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 255, 255, 0.12), transparent);
+  pointer-events: none;
+}
+
+.auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 36px;
+  background: var(--client-surface);
+  border-radius: var(--client-radius);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+}
+
+.auth-card h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.auth-card .auth-sub {
+  text-align: center;
+  color: var(--client-muted);
+  font-size: 0.875rem;
+  margin-bottom: 28px;
+}
+
+.auth-card .field {
+  margin-bottom: 18px;
+}
+
+.auth-card .field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.auth-card .field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-card .field input:focus {
+  outline: none;
+  border-color: var(--client-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.auth-card .err {
+  color: #dc2626;
+  font-size: 0.8125rem;
+  margin-bottom: 12px;
+}
+
+.auth-card .err a {
+  color: var(--client-primary);
+  font-weight: 500;
+}
+
+.auth-card .success {
+  color: #16a34a;
+  font-size: 0.8125rem;
+  margin-bottom: 12px;
+}
+
+.auth-card button[type='submit'] {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--client-primary), #2563eb);
+  color: #fff;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.auth-card button[type='submit']:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+}
+
+.auth-card button[type='submit']:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.auth-card .tip {
+  margin-top: 20px;
+  font-size: 0.8125rem;
+  text-align: center;
+  color: var(--client-muted);
+}
+
+.auth-card .tip a {
+  color: var(--client-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-card .tip a:hover {
+  text-decoration: underline;
+}
+
+.auth-card .desc {
+  font-size: 0.875rem;
+  color: var(--client-muted);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
