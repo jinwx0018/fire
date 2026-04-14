@@ -134,7 +134,7 @@
                 <option value="asc">从旧到新</option>
               </select>
             </label>
-            <input v-model="query.title" class="title-search" placeholder="标题搜索…" @keyup.enter="load" />
+            <input v-model="query.title" class="title-search" placeholder="标题搜索…" @keyup.enter="search" />
           </template>
           <template v-else>
             <input
@@ -185,6 +185,8 @@
               :key="rowKey(row, idx)"
               :to="knowledgeDetailHref(row, idx)"
               class="k-card"
+              :data-knowledge-card-id="knowledgeRowId(row) || undefined"
+              @pointerdown.capture="onKnowledgeCardPointerDown(row)"
             >
               <div class="k-card-cover">
                 <img
@@ -222,7 +224,7 @@
           :total="total"
           :page-size="pageSize"
           :pages="pagesFromApi > 0 ? pagesFromApi : 0"
-          @current-change="load"
+          @current-change="onPagerChange"
         />
         </KnowledgeModuleShell>
       </main>
@@ -230,9 +232,14 @@
   </div>
 </template>
 
+<script>
+/** 供 Layout keep-alive include 匹配，从详情返回时可缓存列表、跳过重请求 */
+export default { name: 'KnowledgeList' }
+</script>
+
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { getContentList, getCategoryList } from '@/api/content'
 import { getRecommendList, reportBehavior } from '@/api/recommend'
 import { resolveMediaUrl } from '@/utils/resolveMediaUrl'
@@ -249,6 +256,103 @@ const listCrumbs = [
 const route = useRoute()
 const router = useRouter()
 
+/** 用户端 Layout 主内容区为滚动容器（.layout .main），非 window */
+function layoutMainEl() {
+  return document.querySelector('.layout .main')
+}
+
+/** 离开列表进详情前：主滚动区 scrollTop（与 pointerdown 双写，防导航瞬间被重置） */
+const savedScrollForDetailReturn = ref(0)
+/** 刚点进详情的知识 id，返回后用 scrollIntoView 对准该卡片 */
+const lastOpenedContentId = ref(null)
+
+function knowledgeRowId(row) {
+  const raw = row?.id ?? row?.contentId ?? row?.content_id
+  if (raw == null || raw === '') return ''
+  const s = String(raw).trim()
+  return /^\d+$/.test(s) ? s : ''
+}
+
+/** 在路由切走之前捕获滚动与条目，避免仅依赖 leave 时 scrollTop 已为 0 */
+function onKnowledgeCardPointerDown(row) {
+  lastOpenedContentId.value = knowledgeRowId(row) || null
+  const main = layoutMainEl()
+  savedScrollForDetailReturn.value = main ? main.scrollTop : 0
+}
+
+/**
+ * 返回列表后：优先把「刚点的那条」滚进视区；找不到卡片时再按像素回退（多帧等布局/懒加载图）
+ */
+function scheduleRestoreAfterDetailReturn() {
+  const idRaw = lastOpenedContentId.value
+  const scrollFb = Number(savedScrollForDetailReturn.value)
+  let attempts = 0
+  const maxAttempts = 48
+
+  const tryFindCard = (main) => {
+    if (!idRaw || !/^\d+$/.test(String(idRaw))) return null
+    return main.querySelector(`[data-knowledge-card-id="${idRaw}"]`)
+  }
+
+  const tick = () => {
+    attempts += 1
+    const main = layoutMainEl()
+    if (!main) {
+      if (attempts < maxAttempts) requestAnimationFrame(tick)
+      return
+    }
+
+    const card = tryFindCard(main)
+    if (card) {
+      try {
+        card.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
+      } catch (_) {
+        try {
+          card.scrollIntoView(true)
+        } catch (_) {
+          /* ignore */
+        }
+      }
+      lastOpenedContentId.value = null
+      return
+    }
+
+    if (Number.isFinite(scrollFb) && scrollFb >= 1) {
+      const maxY = Math.max(0, main.scrollHeight - main.clientHeight)
+      main.scrollTop = Math.min(scrollFb, maxY)
+    }
+
+    const needRetry =
+      attempts < maxAttempts &&
+      ((idRaw && !card) || (Number.isFinite(scrollFb) && scrollFb >= 1 && main.scrollHeight < scrollFb + main.clientHeight * 0.5))
+    if (needRetry) {
+      requestAnimationFrame(tick)
+    } else {
+      lastOpenedContentId.value = null
+    }
+  }
+
+  nextTick(() => {
+    requestAnimationFrame(tick)
+  })
+}
+
+onBeforeRouteLeave((to) => {
+  if (to.name !== 'KnowledgeDetail') return
+  const pid = to.params?.id
+  if (pid != null && String(pid).trim() !== '') {
+    try {
+      const dec = decodeURIComponent(String(pid))
+      lastOpenedContentId.value = /^\d+$/.test(dec) ? dec : lastOpenedContentId.value
+    } catch (_) {
+      const s = String(pid)
+      if (/^\d+$/.test(s)) lastOpenedContentId.value = s
+    }
+  }
+  const main = layoutMainEl()
+  if (main) savedScrollForDetailReturn.value = main.scrollTop
+})
+
 const list = ref([])
 const categories = ref([])
 const pageNum = ref(1)
@@ -263,6 +367,8 @@ const demoCompareRows = ref([])
 const demoMessage = ref('')
 const demoTargetId = ref(0)
 const useAiEnhance = ref(false)
+/** 避免「直达详情再进列表」时误用 backFromDetail 跳过重请求 */
+const listFetchCompletedOnce = ref(false)
 
 function rowSummary(row) {
   const s = row?.summary
@@ -285,7 +391,8 @@ function selectCategory(id) {
 
 function onAiToggle() {
   pageNum.value = 1
-  load()
+  stripPageFromRoute()
+  load({ scrollTop: true })
 }
 
 const currentView = computed(() => {
@@ -302,13 +409,16 @@ function setView(v) {
   if (v !== 'time') {
     delete q.timeOrder
   }
+  delete q.page
   router.push({ path: '/knowledge', query: q })
 }
 
 function onTimeOrderChange(e) {
   const v = e.target?.value
   if (v !== 'asc' && v !== 'desc') return
-  router.replace({ path: '/knowledge', query: { ...route.query, view: 'time', timeOrder: v } })
+  const q = { ...route.query, view: 'time', timeOrder: v }
+  delete q.page
+  router.replace({ path: '/knowledge', query: q })
 }
 
 function rowKey(row, idx) {
@@ -334,17 +444,53 @@ function knowledgeDetailHref(row, idx) {
   return `/knowledge/${pathSeg}`
 }
 
+/** 与地址栏 page 同步，便于从详情返回时恢复页码 */
+function stripPageFromRoute() {
+  if (route.name !== 'KnowledgeList') return
+  if (route.query.page == null || route.query.page === '') return
+  const q = { ...route.query }
+  delete q.page
+  router.replace({ path: '/knowledge', query: q })
+}
+
+function replacePageInRoute(nextPage) {
+  if (route.name !== 'KnowledgeList') return
+  const q = { ...route.query }
+  if (nextPage > 1) q.page = String(nextPage)
+  else delete q.page
+  const want = q.page ?? ''
+  const have = route.query.page ?? ''
+  if (String(want) === String(have)) return
+  router.replace({ path: '/knowledge', query: q })
+}
+
+function syncPageQueryAfterLoad() {
+  if (route.name !== 'KnowledgeList') return
+  const want = pageNum.value > 1 ? String(pageNum.value) : ''
+  const have = String(route.query.page ?? '')
+  if (want === have) return
+  replacePageInRoute(pageNum.value)
+}
+
+function onPagerChange() {
+  replacePageInRoute(pageNum.value)
+  load({ scrollTop: true })
+}
+
 function onFilterChange() {
   pageNum.value = 1
-  load()
+  stripPageFromRoute()
+  load({ scrollTop: true })
 }
 
 function search() {
   pageNum.value = 1
-  load()
+  stripPageFromRoute()
+  load({ scrollTop: true })
 }
 
-async function load() {
+async function load(options = {}) {
+  const scrollTop = options.scrollTop !== false
   loading.value = true
   pageHint.value = ''
   try {
@@ -381,12 +527,14 @@ async function load() {
       const totalVal = Number(data.total ?? data.totalCount ?? 0)
       if (records.length === 0 && totalVal > 0 && pageNum.value > 1 && (pageNum.value - 1) * pageSize.value >= totalVal) {
         pageNum.value -= 1
-        return load()
+        return load({ scrollTop: false })
       }
       list.value = records
       total.value = totalVal
       pagesFromApi.value = 0
     }
+    syncPageQueryAfterLoad()
+    listFetchCompletedOnce.value = true
   } catch (e) {
     console.error(e)
     const msg = typeof e === 'string' ? e : e?.message || '加载失败'
@@ -396,10 +544,16 @@ async function load() {
     pagesFromApi.value = 0
   } finally {
     loading.value = false
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } catch (_) {
-      window.scrollTo(0, 0)
+    if (scrollTop) {
+      savedScrollForDetailReturn.value = 0
+      lastOpenedContentId.value = null
+      const main = layoutMainEl()
+      if (main) main.scrollTop = 0
+      try {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } catch (_) {
+        window.scrollTo(0, 0)
+      }
     }
   }
 }
@@ -431,7 +585,7 @@ async function runDemoBoost() {
     }
     await reportBehavior({ behaviorType: 'LIKE', targetType: 'CONTENT', targetId: demoTargetId.value })
     await reportBehavior({ behaviorType: 'COLLECT', targetType: 'CONTENT', targetId: demoTargetId.value })
-    await load()
+    await load({ scrollTop: true })
     buildDemoCompareRows()
     demoMessage.value = '对比完成：已展示注入行为前后 Top5 排名变化'
   } catch (e) {
@@ -476,12 +630,38 @@ async function loadCategories() {
 
 watch(
   () => [route.name, route.query.view, route.query.timeOrder],
-  () => {
+  (newVal, oldVal) => {
     if (route.name !== 'KnowledgeList') return
-    const v = route.query.view
-    if (!v || (v !== 'time' && v !== 'hot' && v !== 'smart')) return
-    pageNum.value = 1
-    load()
+    const v = route.query.view || 'smart'
+    if (v !== 'time' && v !== 'hot' && v !== 'smart') return
+
+    const backFromDetail =
+      oldVal && oldVal[0] === 'KnowledgeDetail' && newVal[0] === 'KnowledgeList'
+    if (backFromDetail && listFetchCompletedOnce.value) {
+      const pq = Number(route.query.page)
+      if (Number.isFinite(pq) && pq >= 1) pageNum.value = Math.floor(pq)
+      scheduleRestoreAfterDetailReturn()
+      return
+    }
+
+    const viewOrOrderChanged =
+      oldVal &&
+      oldVal[0] === 'KnowledgeList' &&
+      (String(oldVal[1] ?? 'smart') !== String(newVal[1] ?? 'smart') ||
+        String(oldVal[2] ?? '') !== String(newVal[2] ?? ''))
+
+    const fromOtherRoute =
+      oldVal && oldVal[0] !== 'KnowledgeList' && newVal[0] === 'KnowledgeList'
+
+    if (viewOrOrderChanged) {
+      pageNum.value = 1
+      stripPageFromRoute()
+    } else if (fromOtherRoute || !oldVal) {
+      const pq = Number(route.query.page)
+      pageNum.value = Number.isFinite(pq) && pq >= 1 ? Math.floor(pq) : 1
+    }
+
+    load({ scrollTop: viewOrOrderChanged })
   },
   { immediate: true, flush: 'post' },
 )

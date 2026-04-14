@@ -219,6 +219,9 @@ public class RecommendServiceImpl implements RecommendService {
             poolTruncated = true;
         }
 
+        // Item-CF 召回按「内容 id」直塞入池，未再走 SQL 分类条件，可能把已屏蔽分类下的条目带进池；此处统一剔除
+        pool = filterExcludedCategoryContents(pool, excludeCats);
+
         long total = poolTruncated ? pool.size() : totalAll;
 
         if (pool.isEmpty()) {
@@ -292,6 +295,19 @@ public class RecommendServiceImpl implements RecommendService {
             }
         }
         return out;
+    }
+
+    /** 剔除 categoryId 落在排除集合内的条目；category_id 为 null 的保留（与 buildPublishedBaseQuery 一致） */
+    private List<KnowledgeContent> filterExcludedCategoryContents(List<KnowledgeContent> pool, Set<Long> excludeCats) {
+        if (pool == null || pool.isEmpty() || excludeCats == null || excludeCats.isEmpty()) {
+            return pool == null ? Collections.emptyList() : pool;
+        }
+        return pool.stream()
+                .filter(c -> {
+                    Long catId = c.getCategoryId();
+                    return catId == null || !excludeCats.contains(catId);
+                })
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private int userBlockCount(Long userId) {

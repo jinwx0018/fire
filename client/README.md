@@ -35,7 +35,7 @@ src/
 ├── api/          # 接口封装（user、content、forum、recommend、equipment、news）
 ├── router/       # 路由
 ├── stores/       # Pinia（用户登录态）
-└── views/        # 页面（登录/注册、首页、知识/论坛/推荐/器材/新闻、个人中心）
+└── views/        # 页面（登录/注册、首页、知识含智能推荐 Tab、论坛、器材、新闻、个人中心含推荐偏好）
 ```
 
 ## 构建

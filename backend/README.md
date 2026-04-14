@@ -73,6 +73,6 @@ Maven 只显示「Process terminated with exit code: 1」，真实原因在 Spri
 
 - 邮箱重置密码（sendResetEmail、resetByToken）：需配置 Spring Mail（JavaMailSender）才能真实发邮件，否则重置链接仅在服务端日志中输出。
 - 知识内容详情中的「作者名」需关联用户表查询（当前 toDetailMap 可扩展）。
-- 推荐逻辑：当前为简化版（有行为按浏览量排序；无行为全站热门），可扩展为按用户兴趣分类 Top1 + 标签。**智能推荐 - AI 模型接入**：可配置 ai.recommend.enabled、api-url、api-key，在推荐列表返回前调用外部 AI/推荐服务补充 recommendReason 或按模型重排序，异常时降级为规则推荐。
+- **个性化推荐（已实现）**：在已上架知识范围内，多路召回（偏好类目 + Item-CF + 热度暖池等）→ 多因子精排（分类偏好、Item-CF、热度/时效、可选轻量语义与论坛跨域信号）；**未登录**为冷启动（无个人画像、无 Item-CF/语义/论坛加成、不调用 AI）。**AI 增强**：需服务端配置 `ai.recommend.*` 且请求带 `useAi=true`、用户已登录；用户端「智能推荐」Tab 默认不勾选「AI 增强」，避免误耗 Token。可选 `POST /recommend/feedback` 曝光/点击埋点（见 `DB/17_recommend_feedback_optional.sql`）。详见 `DOCX/功能文档-04-个性化知识推荐模块.md`。
 - 统计与导出：StatisticsServiceImpl 中 contentStats、userStats、interactionStats、categoryPie、viewTrend、exportExcel 需按表统计与 EasyExcel 导出。
 - 器材批量导入：EquipmentServiceImpl.importExcel 需解析 Excel 并批量插入。
